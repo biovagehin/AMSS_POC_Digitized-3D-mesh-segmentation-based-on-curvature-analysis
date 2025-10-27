@@ -1,4 +1,4 @@
-# Calcul du plan des moindres carré
+# Calcul du plan des moindres carrés
 
 Ce dossier contient :
 - un fichier nuage_de_points.txt contenant les coordonées d'un nuage de points
