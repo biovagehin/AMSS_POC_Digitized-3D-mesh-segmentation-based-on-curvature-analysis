@@ -1,4 +1,4 @@
-# AMSS_POC
+# Calcul du plan des moindres carré
 
 Ce dossier contient :
 - un fichier nuage_de_points.txt contenant les coordonées d'un nuage de points
