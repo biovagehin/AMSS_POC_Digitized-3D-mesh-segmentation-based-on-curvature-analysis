@@ -65,7 +65,7 @@ def local_curvature(vertex, normal, neighbors, neighbor_normals):
 
     # calcul des k_i et t_i pour chaque voisin
     k_values = [] # liste des courbures locales k_i
-    t_vectors = [] # liste des vecteurs t_i = P_i - P
+    t_vectors = [] # liste des vecteurs t_i
 
     for i in range(len(neighbors)):
         P_i = neighbors[i]
