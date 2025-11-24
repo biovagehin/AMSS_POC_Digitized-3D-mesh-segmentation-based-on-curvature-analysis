@@ -11,11 +11,9 @@ from math import cos, sin, atan2
 from scipy.spatial import KDTree
 
 
-## STEP 1 : Load STL File
-
+## STEP 1 : Load STL File and extract vertices and normals
 file_path = input("Enter the path to your STL file: ").strip()
-stl_mesh = mesh.Mesh.from_file(file_path) # to load the STL file
-
+stl_mesh = mesh.Mesh.from_file(file_path)
 
 # Visualisation of the mesh
 '''
@@ -32,20 +30,36 @@ ax.set_xlabel('X'); ax.set_ylabel('Y'); ax.set_zlabel('Z')
 plt.show()
 '''
 
-# Affichage infos structure de stl_mesh
-'''## Nombre de triangles
-# print("\nNumber of triangles:")
-# print(len(stl_mesh))  # N triangles
-# # Premier triangle -> coordonées des 3 sommets
-# print("\nFirst triangle vertices (x, y, z):")
-# print(stl_mesh.vectors[0])
-# # Normale du premier triangle -> coordonnées du vecteur normal
-# print("\nNormal of the first triangle:")
-# print(stl_mesh.normals[0])
-'''
+# extract vertices and their normals
+
+def extract_vertices_normals(stl_mesh):
+    points = stl_mesh.vectors.reshape(-1, 3)
+    face_normals = np.repeat(stl_mesh.normals, 3, axis=0)
+
+    vertices = []  # on va chercher les sommets uniques (dans points il y a des doublons car contient les sommets de chaque triangle)
+    normals = []   # normales des sommets, calculées à partir des normales des triangles
+    index_map = {} # dictionnaire pour mapper les sommets (uniques) à leurs indices
+
+    for i, v in enumerate(points):
+        key = tuple(v)
+        if key not in index_map:
+            index_map[key] = len(vertices)
+            vertices.append(points[i])
+            normals.append(face_normals[i])
+        else:
+            idx = index_map[key]
+            normals[idx] = normals[idx] + face_normals[i] # normale du sommet = somme des normales des triangles adjacents
+
+    for i in range(len(normals)):
+        normals[i] = normals[i] / np.linalg.norm(normals[i]) # normalisation des normales
+
+    return vertices, normals
+
+vertices, normals = extract_vertices_normals(stl_mesh)
+
+
 
 ## STEP 2 : Compute Local Curvature at Each Vertex
-
 # calcul de la courbure locale en un sommet donné connaissant ses voisins
 def local_curvature(vertex, normal, neighbors, neighbor_normals):
     # calcul de la courbure en un sommet
@@ -91,34 +105,13 @@ def local_curvature(vertex, normal, neighbors, neighbor_normals):
     return k1, k2, phi1
 
 # calcul des courbures principales sur l'ensemble de l'objet
-def all_curvatures(stl_mesh, k_neighbors=20):
-    
-    ## extraction des sommets, de leurs normales et de leurs voisins
-    points = stl_mesh.vectors.reshape(-1, 3)
-    face_normals = np.repeat(stl_mesh.normals, 3, axis=0)
-
-    vertices = []  # on va chercher les sommets uniques (dans points, il y a des doublons comme ça contient les sommets de chaque triangle)
-    normals = [] # normales des sommets uniques,calculées à partir des normales des triangles
-    index_map = {} # dictionnaire pour mapper les sommets uniques à leurs indices
-
-    for i, v in enumerate(points):
-        key = tuple(v)
-        if key not in index_map:
-            index_map[key] = len(vertices)
-            vertices.append(points[i])
-            normals.append(face_normals[i])
-        else:
-            idx = index_map[key]
-            normals[idx] = normals[idx] + face_normals[i] # normale du sommet = somme des normales des triangles adjacents
-
-    for i in range(len(normals)):
-        normals[i] = normals[i] / np.linalg.norm(normals[i]) # normalisation des normales
+def all_curvatures(vertices, normals, k_neighbors=20):
     
     tree = KDTree(vertices) # KDTree pour chercher les k plus proches voisins
     
     # calcul des courbures principales en chaque sommet
-    k1_list = []
-    k2_list = []
+    k1_list = [] 
+    k2_list = [] 
     phi1_list = []
 
     for i in range(len(vertices)):
@@ -136,10 +129,13 @@ def all_curvatures(stl_mesh, k_neighbors=20):
         k2_list.append(k2)
         phi1_list.append(phi1)
 
-    return vertices, normals, k1_list, k2_list, phi1_list
+    return k1_list, k2_list, phi1_list
+
+k1_list, k2_list, phi1_list = all_curvatures(vertices, normals, k_neighbors=20)
+
+
 
 ## STEP 3 : Distribution of curvatures
-
 def plot_curvature_distribution(k1_list, bins=50):
 
     plt.figure(figsize=(10,6))
@@ -149,7 +145,5 @@ def plot_curvature_distribution(k1_list, bins=50):
     plt.ylabel("Densité")
     plt.show()
 
-
 # affichage de la distribution des courbures
-vertices, normals, k1_list, k2_list, phi1_list = all_curvatures(stl_mesh)
 plot_curvature_distribution(k1_list)
