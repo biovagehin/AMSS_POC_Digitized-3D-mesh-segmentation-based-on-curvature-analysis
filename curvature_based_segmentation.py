@@ -57,8 +57,6 @@ def extract_vertices_normals(stl_mesh):
 
 vertices, normals = extract_vertices_normals(stl_mesh)
 
-
-
 ## STEP 2 : Compute Local Curvature at Each Vertex
 # calcul de la courbure locale en un sommet donné connaissant ses voisins
 def local_curvature(vertex, normal, neighbors, neighbor_normals):
@@ -147,3 +145,18 @@ def plot_curvature_distribution(k1_list, bins=50):
 
 # affichage de la distribution des courbures
 plot_curvature_distribution(k1_list)
+
+# visualisation des courbures sur le modèle 3D
+def plot_curvature_3d(vertices, k_values):
+    verts = np.array(vertices)
+    k = np.array(k_values)
+
+    cmap = plt.get_cmap("jet") # bleu = faible courbure, rouge = forte courbure
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    sc = ax.scatter(verts[:,0], verts[:,1], verts[:,2], c=k, cmap=cmap, s=2)
+    plt.colorbar(sc, ax=ax)
+
+    plt.show()
+
+plot_curvature_3d(vertices, k1_list)
