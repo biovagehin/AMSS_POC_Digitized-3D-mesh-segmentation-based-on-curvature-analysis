@@ -1,2 +1,0 @@
-- s'assurer de la bonne logique de l'erosion/dilatation : erosion k fois. les bords érodés deviennent sans labels. et les regions déconnectées sont numérotées séparément. ensuite on redilate autant de fois qu'on a erodé. et puis les ponts qui restent sans labels sont labellisés comme edge. ajouter un parametre k pour le nombre d'erosions dilatations dans la signature de la fonction.
-- post processing apres l'erosion dilatation : bien supprimer les small regions (mtn la surface moyenne devrait etre plus représentative)
