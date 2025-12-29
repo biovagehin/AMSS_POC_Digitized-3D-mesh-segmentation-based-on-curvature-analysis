@@ -376,7 +376,7 @@ def analyze_distribution(curvatures, bin_centers, density, window_size=10, n_bin
     #plt.show() """
 
     # Visualization of discrete and continuous distributions with peaks and valleys superimposed
-    """ plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 8))
     plt.hist(
         curvatures,
         bins=n_bins,
@@ -419,7 +419,7 @@ def analyze_distribution(curvatures, bin_centers, density, window_size=10, n_bin
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.savefig(f"results/distribution_discrete_analysis_n{n_bins}_h{h}.png", dpi=300)
-    plt.show() """
+    #plt.show()
 
     return peaks, filtered_valleys, n_bins, h
 
@@ -452,7 +452,7 @@ def thresholding(vertices, curvatures, n_bins=50, h=0.01, window_size=10, min_de
             labels.append("edge")
     labels = np.array(labels)
 
-    print(f"Thresholds : {threshold_low:.4f} and {threshold_high:.4f}")
+    #print(f"Thresholds : {threshold_low:.4f} and {threshold_high:.4f}")
 
     # Visualization of the mesh after thresholding
     """ colors = np.array(['blue' if label == 'uniform' else 'red' for label in labels])
@@ -863,13 +863,14 @@ def segmentation_bis(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.
 #----------------------------------------------------------------------------------------------------------
 # STEP 5 : Evaluation of performance on an STL file
 
-region_ids, triangle_labels, t_low, t_high, execution_time = segmentation(stl_mesh, n_bins=200, h=0.01, window_size=8, min_density=0.02, n_erosions=6)
+region_ids, _, t_low, t_high, execution_time = segmentation(stl_mesh, n_bins=200, h=0.01, window_size=8, min_density=0.02, n_erosions=6)
 
-print("----- RESULTS -----")
+print("----- RESULTS -----------------------------------------------------------------")
 print(f"Number of triangles in the mesh : {len(stl_mesh.vectors)}")
 print(f"Execution time : {execution_time:.2f} seconds")
 print(f"Thresholds used : {t_low:.4f} and {t_high:.4f}")
 print(f"Number of regions found : {len(np.unique(region_ids[region_ids >= 0]))}")
+print("-------------------------------------------------------------------------------")
 
 ############################################################################################
 ## For testing individual steps ############################################################
