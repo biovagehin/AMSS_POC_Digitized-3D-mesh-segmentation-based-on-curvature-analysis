@@ -1,30 +1,18 @@
 # Proof of Concept of the 3D Segmentation Method by S. Gauthier et al.
 
-This repository contains my proof-of-concept work carried out as part of the M2 Advanced Manufacturing & Smart Systems program (ENS Paris-Saclay). It consists of implementing the 3D object segmentation method proposed by Gauthier, S. et al. in their article *"Digitized 3D mesh segmentation based on curvature analysis"*.
+This repository contains my proof-of-concept work carried out as part of the M2 Advanced Manufacturing & Smart Systems program (ENS Paris-Saclay). It consists of implementing the 3D object segmentation method proposed by Gauthier, S. et al. in their article *"Digitized 3D mesh segmentation based on curvature analysis"*, relying on **local curvature analysis**. 
 
-This method enables the segmentation of 3D objects using **local curvature analysis**. The main steps of the code *(work in progress)* are as follows:
+You will find in this folder:
+- `curvature_based_segmentation.py`: the code implementing this method
+- `Report_curvature_based_segmentation`: the report for this proof-of-concept project
+- `dataset`: this folder contains .stl files to test the algorithm
+- `results`: this folder contains the segmentation results on the dataset parts
+- `reference`: this folder contains the reference paper as well as other references used for the implementation
 
-1. **Loading the STL file**  
-   Reading the 3D model to be segmented.
-
-2. **Local curvature computation**  
-   Calculating the curvature at each point of the mesh.
-
-3. **Curvature distribution plotting and analysis**  
-   Analyzing the distribution of curvature values to identify key areas for segmentation (peaks and valleys detection).
-
-4. **Segmentation**  
-   - Edge detection based on curvature variations  
-   - Region growing to group homogeneous regions  
-   - Post-processing to clean and refine the segmentation
-
-5. **Recursivity**  
-   Applying the segmentation multiple times for complex shapes: after the initial segmentation, the code can be applied recursively to sub-meshes to improve the results.
-
-
-
-(The repository also includes a folder [`exercice_depot_git`](./exercice_depot_git), which contains a **notebook** demonstrating how to compute a **least squares plane** from a point cloud.  
-This served as a preliminary exercise to familiarize myself with creating and managing a Git repository before working on the main project.)
+To use the code, you can follow these following steps:
+- Open `curvature_based_segmentation.py` and adjust the parameters at line 866 (for example: `segmentation(stl_mesh, n_bins=200, h=0.01, window_size=8, min_density=0.02, n_erosions=6)`)
+- Run `curvature_based_segmentation.py`
+- Enter in the terminal the path to the .stl file you want to test (for example: `dataset\LURPart.stl`)
 
 
 
