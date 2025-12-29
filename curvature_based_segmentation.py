@@ -11,10 +11,10 @@ from math import cos, sin, atan2
 import time
 
 #----------------------------------------------------------------------------------------------------------
-## STEP 1 : Load STL File, Extract Vertices, their Normals, their 1-Ring Neighbours and the Mean Edge Length
+## STEP 1 : Load STL File, Extract Vertices, their Normals, their 2-Ring Neighbours and the Mean Edge Length
 file_path = input("Enter the path to your STL file: ").strip()
 stl_mesh = mesh.Mesh.from_file(file_path)
-# Visualisation of the mesh
+# Visualization of the mesh
 '''
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -29,7 +29,7 @@ ax.set_xlabel('X'); ax.set_ylabel('Y'); ax.set_zlabel('Z')
 plt.show()
 '''
 
-# extract vertices, their normals, their 1-ring neighbours, and the mean edge length
+# extract vertices, their normals, their 2-ring neighbours, and the mean edge length
 def extract_mesh_data(stl_mesh):
     points = stl_mesh.vectors.reshape(-1, 3)
     face_normals = np.repeat(stl_mesh.normals, 3, axis=0)
@@ -49,7 +49,7 @@ def extract_mesh_data(stl_mesh):
             normals[idx] = normals[idx] + face_normals[i]
 
     for i in range(len(normals)):
-        normals[i] = normals[i] / np.linalg.norm(normals[i]) # normalisation des normales
+        normals[i] = normals[i] / np.linalg.norm(normals[i]) # normalisation of normals
 
     # 1-ring neighbours search + mean edge length calculation
     neighbours_1r = [[] for _ in range(len(vertices))]
@@ -96,7 +96,7 @@ def extract_mesh_data(stl_mesh):
 
 #----------------------------------------------------------------------------------------------------------
 ## STEP 2 : Compute Local Curvature at Each Vertex of the Mesh
-# Compute local curvature at a vertex P given its normal N and its 1-ring neighbours
+# Compute local curvature at a vertex P given its normal N and its 2-ring neighbours
 def local_curvature(vertex, normal, neighbors, neighbor_normals):
     # curvature at P in the direction t_i defined by neighbor i :
     # k_i(t_i) = <(P_i - P), (N_i - N)> / ||P_i - P||^2
@@ -193,56 +193,52 @@ def plot_curvature_3d_triangles(stl_mesh):
     mappable = plt.cm.ScalarMappable(cmap=cmap)
     mappable.set_array(triangle_curvatures)
     cbar = plt.colorbar(mappable, ax=ax)
-    cbar.set_label("Courbure principale normalisée (sans unité)")
+    cbar.set_label("Principal curvature normalised (unitless)")
 
     plt.show()
 # vertices are colored according to their curvature
 def plot_curvature_3d_vertices(stl_mesh):
-    # Calcul des courbures aux sommets
+    # Compute of curvatures at vertices
     vertices, curvatures, _ = compute_curvatures(stl_mesh)
     v = np.array(vertices)
     k = np.array(curvatures)
-
     # plot
     cmap = plt.get_cmap("jet")
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-
-    # Coloration des sommets selon leur courbure
-    colors = cmap((k - k.min()) / (k.max() - k.min()))  # normalisation entre 0 et 1
-    ax.scatter(v[:,0], v[:,1], v[:,2], c=colors, s=10)  # s = taille des points
-
+    # Vertices coloring according to curvature values
+    colors = cmap((k - k.min()) / (k.max() - k.min()))  # normalisation between 0 and 1
+    ax.scatter(v[:,0], v[:,1], v[:,2], c=colors, s=10) 
     ax.set_xlim(v[:,0].min(), v[:,0].max())
     ax.set_ylim(v[:,1].min(), v[:,1].max())
     ax.set_zlim(v[:,2].min(), v[:,2].max())
     ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
-
-    # Barre de couleur
     mappable = plt.cm.ScalarMappable(cmap=cmap)
     mappable.set_array(k)
     cbar = plt.colorbar(mappable, ax=ax)
-    cbar.set_label("Courbure principale normalisée (sans unité)")
+    cbar.set_label("Principal curvature normalised (unitless)")
 
     plt.show()
 
 #----------------------------------------------------------------------------------------------------------
-## STEP 3 : Distribution and visualization of curvatures
+## STEP 3 : Analysis of the distribution of curvatures
 # Distribution of normalised curvatures (k_max * mean_edge_length) -> discrete histogram
 def plot_curvature_distribution(curvatures, bins=50, filename="results/distibution_discrete.png"):
     plt.figure(figsize=(10,6))
     plt.hist(curvatures, bins=bins, color='grey', edgecolor='black')
-    plt.title("Distribution des courbures normalisées")
-    plt.xlabel(f"Courbure principale normalisée")
-    plt.ylabel("Nombre d'occurences")
+    plt.title("Distribution of Principal Curvatures (Normalised)")
+    plt.xlabel(f"Principal curvature normalised")
+    plt.ylabel("Number of occurrences")
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.savefig(filename, dpi=300)
-    plt.show()
+    #plt.show()
 
 # Estimation of curvature distribution using kernel density estimation -> continuous curve
 def kernel_estimation(curvatures, n_bins=50, h=0.01, filename="results/distribution_continuous.png"):
     curvatures = np.array(curvatures)
 
-    plot_curvature_distribution(curvatures, bins=n_bins, filename=f"results/distribution_discrete_n{n_bins}_h{h}.png")
+    #plot_curvature_distribution(curvatures, bins=n_bins, filename=f"results/distribution_discrete_n{n_bins}_h{h}.png")
+    
     # discrete distribution over bins
     bin_edges = np.linspace(curvatures.min(), curvatures.max(), n_bins + 1)
     bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
@@ -253,12 +249,12 @@ def kernel_estimation(curvatures, n_bins=50, h=0.01, filename="results/distribut
         density += np.exp(-0.5 * ((bin_centers - xi)/h)**2) / (h * np.sqrt(2*np.pi))
     density /= density.sum() * (bin_centers[1] - bin_centers[0])
 
-    # visualisation
+    # visualization
     """ plt.figure(figsize=(10,6))
     plt.plot(bin_centers, density, color='black')
-    plt.title("Estimation de la distribution des courbures")
-    plt.xlabel("Courbure principale normalisée")
-    plt.ylabel("Densité")
+    plt.title("Estimation of Curvature Distribution using KDE")
+    plt.xlabel("Principal curvature normalised")
+    plt.ylabel("Density")
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.savefig(filename, dpi=300)
     plt.show() """
@@ -276,6 +272,11 @@ def analyze_distribution(curvatures, bin_centers, density, window_size=10, n_bin
         end = min(n_bins, i + window_size // 2 + 1)
         if density[i] == np.max(density[start:end]):
             peaks.append(i)
+
+    # Filtering peaks with minimum height (0.01% of max density)
+    min_peak_height = 0.01 * density.max()
+    peaks = [p for p in peaks if density[p] >= min_peak_height]
+
     if len(peaks) < 1:
         return [], []
 
@@ -328,33 +329,40 @@ def analyze_distribution(curvatures, bin_centers, density, window_size=10, n_bin
             y_line = m * bin_centers[i] + b
             distances.append(y_line - density[i])
         distances = np.array(distances)
+        
+        # if several candidates, keep the one closest to 0
+        if len(distances) > 0:
+            max_dist_idx = np.argmax(distances)
+            candidates = np.where(distances == distances[max_dist_idx])[0]
+            best_idx = candidates[np.argmin(np.abs(bin_centers[start:end][candidates]))]
+            valleys.append(start + best_idx)
 
-        for i in range(len(distances)):
-            w_start = max(0, i - window_size // 2)
-            w_end = min(len(distances), i + window_size // 2 + 1)
-            if distances[i] == np.max(distances[w_start:w_end]):
-                valleys.append(start + i)
-
-    # Filtering valleys based on minimum density
+    # Filtering extreme valleys if their density is too low
     filtered_valleys = []
     ignored_valleys = []
-    # première valley
-    if density[valleys[0]] >= min_density * density.max():
-        filtered_valleys.append(valleys[0])
-    else:
-        ignored_valleys.append(valleys[0])
-    # ajouts de toutes les valleys intermédiaires
+
+    if len(valleys) > 0:
+        # Left extreme valley
+        if density[valleys[0]] >= min_density * density.max():
+            filtered_valleys.append(valleys[0])
+        else:
+            ignored_valleys.append(valleys[0])
+
+    # All intermediate valleys are always kept
     for v in valleys[1:-1]:
         filtered_valleys.append(v)
-    # dernière valley
-    if density[valleys[-1]] >= min_density * density.max():
-        filtered_valleys.append(valleys[-1])
-    else:
-        ignored_valleys.append(valleys[-1])
+
+    if len(valleys) > 1:
+        # Right extreme valley
+        if density[valleys[-1]] >= min_density * density.max():
+            filtered_valleys.append(valleys[-1])
+        else:
+            ignored_valleys.append(valleys[-1])
 
 
-    # Visualisation of peaks and valleys
-    plt.figure(figsize=(10, 6))
+
+    # Visualization of peaks and valleys
+    """ plt.figure(figsize=(10, 6))
     plt.plot(bin_centers, density, color="black", label="Distribution")
 
     plt.scatter(bin_centers[peaks], density[peaks], color="red", label="Peaks", zorder=3)
@@ -365,7 +373,53 @@ def analyze_distribution(curvatures, bin_centers, density, window_size=10, n_bin
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.savefig(f"results/distribution_analysis_n{n_bins}_h{h}.png", dpi=300)
-    plt.show()
+    #plt.show() """
+
+    # Visualization of discrete and continuous distributions with peaks and valleys superimposed
+    """ plt.figure(figsize=(10, 8))
+    plt.hist(
+        curvatures,
+        bins=n_bins,
+        density=True,
+        color="lightgrey",
+        edgecolor="black",
+        alpha=0.4,
+        label="Discrete distribution",
+    )
+    plt.plot(bin_centers, density, color="black", linewidth=2, label="KDE")
+    plt.scatter(
+        bin_centers[peaks],
+        density[peaks],
+        color="red",
+        s=60,
+        label="Peaks",
+        zorder=3
+    )
+    plt.scatter(
+        bin_centers[filtered_valleys],
+        density[filtered_valleys],
+        color="blue",
+        s=60,
+        label="Keptvalleys",
+        zorder=3
+    )
+    ignored_valleys = [v for v in valleys if v not in filtered_valleys]
+    if len(ignored_valleys) > 0:
+        plt.scatter(
+            bin_centers[ignored_valleys],
+            density[ignored_valleys],
+            color="grey",
+            s=60,
+            label="Ignored valleys",
+            zorder=3
+        )
+    plt.xlabel("Principal curvature normalised")
+    plt.ylabel("Density")
+    plt.title("Distribution of Principal Curvatures with Peaks and Valleys - Discrete and Continuous")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.5)
+    plt.savefig(f"results/distribution_discrete_analysis_n{n_bins}_h{h}.png", dpi=300)
+    plt.show() """
 
     return peaks, filtered_valleys, n_bins, h
 
@@ -381,10 +435,10 @@ def thresholding(vertices, curvatures, n_bins=50, h=0.01, window_size=10, min_de
     # Detection of peaks and valleys
     peaks, valleys, n_bins, h = analyze_distribution(curvatures, bin_centers, density, window_size=window_size, n_bins=n_bins, h=h, min_density=min_density)
     if len(valleys) < 2:
-        raise ValueError("Pas assez de valleys.")
+        raise ValueError("Not enough valleys.")
 
     # Thresholds based on the first and last valleys
-    first_valley_idx = valleys[0] # we keep the 1st valley (artificial)
+    first_valley_idx = valleys[0] # we keep the 1st valley
     last_valley_idx = valleys[-1] # and the last valley
     threshold_low = bin_centers[first_valley_idx]
     threshold_high = bin_centers[last_valley_idx]
@@ -400,22 +454,22 @@ def thresholding(vertices, curvatures, n_bins=50, h=0.01, window_size=10, min_de
 
     print(f"Thresholds : {threshold_low:.4f} and {threshold_high:.4f}")
 
-    # Visualisation of the mesh after thresholding
+    # Visualization of the mesh after thresholding
     """ colors = np.array(['blue' if label == 'uniform' else 'red' for label in labels])
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(vertices[:,0], vertices[:,1], vertices[:,2], c=colors, s=5)  # s = taille des points
+    ax.scatter(vertices[:,0], vertices[:,1], vertices[:,2], c=colors, s=5)
     ax.set_xlim(vertices[:,0].min(), vertices[:,0].max())
     ax.set_ylim(vertices[:,1].min(), vertices[:,1].max())
     ax.set_zlim(vertices[:,2].min(), vertices[:,2].max())
     ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
-    plt.title("Tri des sommets selon leur courbure : uniform (bleu) vs arête (rouge)")
+    plt.title(" Classification of vertices : uniform (blue) vs edge (red)")
     plt.show()"""
 
     return labels, threshold_low, threshold_high 
 
 # Segmentation function, using a region growing algorithm
-def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02):
+def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02, n_erosions=5):
     start_time = time.perf_counter()
     # Compute curvatures
     vertices, curvatures, index_map = compute_curvatures(stl_mesh)
@@ -425,25 +479,25 @@ def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02):
 
     triangles = stl_mesh.vectors
     n_triangles = len(triangles)
-    # definition of area threshold for post-processing
+
     def triangle_area(tri):
         return 0.5 * np.linalg.norm(np.cross(tri[1] - tri[0], tri[2] - tri[0]))
     triangle_areas = np.array([triangle_area(tri) for tri in triangles])
     mean_triangle_area = np.mean(triangle_areas)
     area_threshold = 20 * mean_triangle_area 
 
-    # Labelling triangles according to vertex labels : labeled as "edge" if at least one vertex is labeled as "edge"
+    # Labelling triangles
     triangle_labels = []
     for tri in triangles:
         indices = [index_map[tuple(v)] for v in tri]
         tri_vertex_labels = [labels[idx] for idx in indices]
-        if tri_vertex_labels.count("edge") >= 1 :
+        if tri_vertex_labels.count("edge") >= 2:
             triangle_labels.append("edge")
         else:
             triangle_labels.append("uniform")
     triangle_labels = np.array(triangle_labels)
 
-    # Triangle adjacency list
+    # Triangle adjacency
     triangle_neighbors = [[] for _ in range(n_triangles)]
     vertex_to_triangles = {i: [] for i in range(len(vertices))}
     for t_idx, tri in enumerate(triangles):
@@ -456,15 +510,12 @@ def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02):
         neighbor_set.discard(t_idx)
         triangle_neighbors[t_idx] = list(neighbor_set)
 
-    # Assign regions iteratively
+    # Initial region growing on uniform triangles
     region_ids = -1 * np.ones(n_triangles, dtype=int)
     current_region = 0
-
     for t_idx in range(n_triangles):
         if triangle_labels[t_idx] != "uniform" or region_ids[t_idx] != -1:
             continue
-        
-        # Region growing
         stack = [t_idx]
         while stack:
             curr = stack.pop()
@@ -474,53 +525,40 @@ def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02):
             for nbr in triangle_neighbors[curr]:
                 if triangle_labels[nbr] == "uniform" and region_ids[nbr] == -1:
                     stack.append(nbr)
-
         current_region += 1
 
-
-    # post-processing :  small regions merging (area < threshold = 20 * mean area)
+    # Post-processing small regions
     region_ids_post = region_ids.copy()
     unique_regions = np.unique(region_ids[region_ids >= 0])
-
     for r in unique_regions:
         tris = np.where(region_ids == r)[0]
         area = triangle_areas[tris].sum()
-
         if area < area_threshold:
             neighbors = set()
             for t in tris:
                 for n in triangle_neighbors[t]:
                     if region_ids[n] != r and region_ids[n] != -1:
                         neighbors.add(region_ids[n])
-
             if len(neighbors) == 1:
-                # merge
                 target = neighbors.pop()
                 region_ids_post[tris] = target
             else:
-                # suppression
                 region_ids_post[tris] = -1
-
     region_ids = region_ids_post
     current_region = len(np.unique(region_ids[region_ids >= 0]))
+    print(f"Number of regions after post-processing (before erosion/dilation) : {current_region}")
 
-    print(f"Nombre de régions après post-processing (avant érosion/dilatation) : {current_region}")
-
-    end_time = time.perf_counter()
-    print(f"Temps d'exécution : {end_time - start_time:.2f} s")
-
-    # Visualization of regions
-    cmap = plt.get_cmap("tab20")
+    # Visualization of the initial segmentation
+    """ cmap = plt.get_cmap("tab20")
     colors = []
     for t in range(n_triangles):
         if region_ids[t] == -1:
-            # edges ou non-classés en rouge
-            colors.append((0,0,0,0.7))  # noir avec alpha 0.7
+            colors.append((0, 0, 0, 0.7))  # edges
         else:
             colors.append(cmap(region_ids[t] % 20))
     colors = np.array(colors)
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
     poly_collection = Poly3DCollection(triangles, facecolors=colors, edgecolor='k', linewidths=0.1, alpha=0.7)
     ax.add_collection3d(poly_collection)
@@ -529,30 +567,28 @@ def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02):
     ax.set_ylim(v[:,1].min(), v[:,1].max())
     ax.set_zlim(v[:,2].min(), v[:,2].max())
     ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
-    plt.title("Segmentation par region growing : régions uniformes en couleur, arêtes en noir")
-    plt.show()
+    plt.title("Initial Segmentation")
+    plt.show() """
 
-    # Erosions/Dilations
-    eroded = region_ids.copy()
-    for _ in range(5):  # number of erosion iterations
-        new_eroded = eroded.copy()
+    ### Post-processing to enhance the segmentation : Erosion/Dilatation
+    # Erosion
+    mask = (region_ids != -1)
+    for _ in range(n_erosions):
+        new_mask = mask.copy()
         for t in range(n_triangles):
-            if eroded[t] == -1:
+            if not mask[t]:
                 continue
-            same = sum(eroded[n] == eroded[t] for n in triangle_neighbors[t])
-            if same < 3:  
-                new_eroded[t] = -1
+            same = sum(mask[n] for n in triangle_neighbors[t])
+            if same < 3:
+                new_mask[t] = False
+        mask = new_mask
 
-        eroded = new_eroded
-    region_ids = eroded
-
+    # Region growing on eroded regions
     region_ids = -1 * np.ones(n_triangles, dtype=int)
     current_region = 0
-
     for t_idx in range(n_triangles):
-        if eroded[t_idx] == -1 or region_ids[t_idx] != -1:
+        if not mask[t_idx] or region_ids[t_idx] != -1:
             continue
-
         stack = [t_idx]
         while stack:
             curr = stack.pop()
@@ -560,66 +596,165 @@ def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02):
                 continue
             region_ids[curr] = current_region
             for nbr in triangle_neighbors[curr]:
-                if eroded[nbr] != -1 and region_ids[nbr] == -1:
+                if mask[nbr] and region_ids[nbr] == -1:
                     stack.append(nbr)
-
         current_region += 1
 
-    # Dilatation
-    dilated = region_ids.copy()
-    for _ in range(2):  # as many iterations as erosion
-        for t in range(n_triangles):
-            if dilated[t] != -1:
-                continue
-            neighbor_regions = [
-                dilated[n] for n in triangle_neighbors[t] if dilated[n] != -1
-            ]
-            if len(neighbor_regions) == 1:
-                dilated[t] = neighbor_regions[0]
-
-    region_ids = dilated
-
-    n_regions_after = len(np.unique(region_ids[region_ids >= 0]))
-    print(f"Nombre de régions après erosion/dilatation : {n_regions_after}")
-
-    # Post-processing again : small regions merging
-    region_ids_post2 = region_ids.copy()
-    unique_regions = np.unique(region_ids_post2[region_ids_post2 >= 0])
-
-    for r in unique_regions:
-        tris = np.where(region_ids_post2 == r)[0]
-        area = triangle_areas[tris].sum()
-
-        if area < area_threshold:
-            neighbors = set()
-            for t in tris:
-                for n in triangle_neighbors[t]:
-                    if region_ids_post2[n] != r and region_ids_post2[n] != -1:
-                        neighbors.add(region_ids_post2[n])
-
-            if len(neighbors) == 1:
-                # merge with neighbor
-                target = neighbors.pop()
-                region_ids_post2[tris] = target
-            else:
-                # if multiple neighbors or isolated, mark as -1
-                region_ids_post2[tris] = -1
-
-    region_ids = region_ids_post2
-    n_regions_final = len(np.unique(region_ids[region_ids >= 0]))
-    print(f"Nombre de régions après second post-processing : {n_regions_final}")
-
-
-    # Visualization after erosion/dilation
+    # Visualization after erosion + region growing
+    """ cmap = plt.get_cmap("tab20")
     colors = []
     for t in range(n_triangles):
         if region_ids[t] == -1:
-            colors.append((0,0,0,0.7))  # noir avec alpha 0.7
+            colors.append((0, 0, 0, 0.7))
+        else:
+            colors.append(cmap(region_ids[t] % 20))
+    colors = np.array(colors)
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    poly = Poly3DCollection(triangles, facecolors=colors, edgecolor='k', linewidths=0.1, alpha=0.9)
+    ax.add_collection3d(poly)
+    v = np.array(vertices)
+    ax.set_xlim(v[:, 0].min(), v[:, 0].max())
+    ax.set_ylim(v[:, 1].min(), v[:, 1].max())
+    ax.set_zlim(v[:, 2].min(), v[:, 2].max())
+    ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
+    plt.title("Segmentation after erosion and second region growing")
+    plt.tight_layout()
+    plt.show() """
+
+    # Dilatation
+    for _ in range(n_erosions):
+        new_region_ids = region_ids.copy()
+        for t in range(n_triangles):
+            if region_ids[t] != -1:
+                continue
+            neighbor_regions = [region_ids[n] for n in triangle_neighbors[t] if region_ids[n] != -1]
+            if len(neighbor_regions) == 1:
+                new_region_ids[t] = neighbor_regions[0]
+        region_ids = new_region_ids
+
+    n_regions_after = len(np.unique(region_ids[region_ids >= 0]))
+    print(f"Number of regions after erosion/dilation : {n_regions_after}")
+
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
+    # Final visualization of the segmentation
+    cmap = plt.get_cmap("tab20")
+    colors = []
+    for t in range(n_triangles):
+        if region_ids[t] == -1:
+            colors.append((0, 0, 0, 0.7))
         else:
             colors.append(cmap(region_ids[t] % 20))
     colors = np.array(colors)
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    poly_collection = Poly3DCollection(triangles, facecolors=colors, edgecolor='k', linewidths=0.1, alpha=0.7)
+    ax.add_collection3d(poly_collection)
+    v = np.array(vertices)
+    ax.set_xlim(v[:, 0].min(), v[:, 0].max())
+    ax.set_ylim(v[:, 1].min(), v[:, 1].max())
+    ax.set_zlim(v[:, 2].min(), v[:, 2].max())
+    ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
+    plt.title("Final Segmentation")
+    plt.show()
+
+
+    return region_ids, triangle_labels, threshold_low, threshold_high, elapsed_time
+
+# alternative segmentation function with modified triangle labelling criterion : a triangle is labelled as 'edge' if it has at least one 'edge' vertex
+def segmentation_bis(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02, n_erosions=5):
+    start_time = time.perf_counter()
+    # Compute curvatures
+    vertices, curvatures, index_map = compute_curvatures(stl_mesh)
+    
+    # Thresholding to label vertices as 'uniform' or 'edge'
+    labels, threshold_low, threshold_high = thresholding(vertices, curvatures, n_bins=n_bins, h=h, window_size=window_size, min_density=min_density)
+
+    triangles = stl_mesh.vectors
+    n_triangles = len(triangles)
+
+    def triangle_area(tri):
+        return 0.5 * np.linalg.norm(np.cross(tri[1] - tri[0], tri[2] - tri[0]))
+    triangle_areas = np.array([triangle_area(tri) for tri in triangles])
+    mean_triangle_area = np.mean(triangle_areas)
+    area_threshold = 20 * mean_triangle_area 
+
+    # Labelling triangles
+    triangle_labels = []
+    for tri in triangles:
+        indices = [index_map[tuple(v)] for v in tri]
+        tri_vertex_labels = [labels[idx] for idx in indices]
+        if tri_vertex_labels.count("edge") >= 1: ### MODIFIED HERE
+            triangle_labels.append("edge")
+        else:
+            triangle_labels.append("uniform")
+    triangle_labels = np.array(triangle_labels)
+
+    # Triangle adjacency
+    triangle_neighbors = [[] for _ in range(n_triangles)]
+    vertex_to_triangles = {i: [] for i in range(len(vertices))}
+    for t_idx, tri in enumerate(triangles):
+        for v in tri:
+            vertex_to_triangles[index_map[tuple(v)]].append(t_idx)
+    for t_idx, tri in enumerate(triangles):
+        neighbor_set = set()
+        for v in tri:
+            neighbor_set.update(vertex_to_triangles[index_map[tuple(v)]])
+        neighbor_set.discard(t_idx)
+        triangle_neighbors[t_idx] = list(neighbor_set)
+
+    # Initial region growing on uniform triangles
+    region_ids = -1 * np.ones(n_triangles, dtype=int)
+    current_region = 0
+    for t_idx in range(n_triangles):
+        if triangle_labels[t_idx] != "uniform" or region_ids[t_idx] != -1:
+            continue
+        stack = [t_idx]
+        while stack:
+            curr = stack.pop()
+            if region_ids[curr] != -1:
+                continue
+            region_ids[curr] = current_region
+            for nbr in triangle_neighbors[curr]:
+                if triangle_labels[nbr] == "uniform" and region_ids[nbr] == -1:
+                    stack.append(nbr)
+        current_region += 1
+
+    # Post-processing small regions
+    region_ids_post = region_ids.copy()
+    unique_regions = np.unique(region_ids[region_ids >= 0])
+    for r in unique_regions:
+        tris = np.where(region_ids == r)[0]
+        area = triangle_areas[tris].sum()
+        if area < area_threshold:
+            neighbors = set()
+            for t in tris:
+                for n in triangle_neighbors[t]:
+                    if region_ids[n] != r and region_ids[n] != -1:
+                        neighbors.add(region_ids[n])
+            if len(neighbors) == 1:
+                target = neighbors.pop()
+                region_ids_post[tris] = target
+            else:
+                region_ids_post[tris] = -1
+    region_ids = region_ids_post
+    current_region = len(np.unique(region_ids[region_ids >= 0]))
+    #print(f"Number of regions after post-processing (before erosion/dilation) : {current_region}")
+
+    # Visualization of the initial segmentation
+    """ cmap = plt.get_cmap("tab20")
+    colors = []
+    for t in range(n_triangles):
+        if region_ids[t] == -1:
+            colors.append((0, 0, 0, 0.7))  # edges
+        else:
+            colors.append(cmap(region_ids[t] % 20))
+    colors = np.array(colors)
+
+    fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
     poly_collection = Poly3DCollection(triangles, facecolors=colors, edgecolor='k', linewidths=0.1, alpha=0.7)
     ax.add_collection3d(poly_collection)
@@ -628,16 +763,115 @@ def segmentation(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.02):
     ax.set_ylim(v[:,1].min(), v[:,1].max())
     ax.set_zlim(v[:,2].min(), v[:,2].max())
     ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
-    plt.title("Segmentation par region growing après erosion/dilatation")
+    plt.title("Initial Segmentation")
+    plt.show() """
+
+    ### Post-processing to enhance the segmentation : Erosion/Dilatation
+    # Erosion
+    mask = (region_ids != -1)
+    for _ in range(n_erosions):
+        new_mask = mask.copy()
+        for t in range(n_triangles):
+            if not mask[t]:
+                continue
+            same = sum(mask[n] for n in triangle_neighbors[t])
+            if same < 3:
+                new_mask[t] = False
+        mask = new_mask
+
+    # Region growing on eroded regions
+    region_ids = -1 * np.ones(n_triangles, dtype=int)
+    current_region = 0
+    for t_idx in range(n_triangles):
+        if not mask[t_idx] or region_ids[t_idx] != -1:
+            continue
+        stack = [t_idx]
+        while stack:
+            curr = stack.pop()
+            if region_ids[curr] != -1:
+                continue
+            region_ids[curr] = current_region
+            for nbr in triangle_neighbors[curr]:
+                if mask[nbr] and region_ids[nbr] == -1:
+                    stack.append(nbr)
+        current_region += 1
+
+    # Visualization after erosion + region growing
+    """ cmap = plt.get_cmap("tab20")
+    colors = []
+    for t in range(n_triangles):
+        if region_ids[t] == -1:
+            colors.append((0, 0, 0, 0.7))
+        else:
+            colors.append(cmap(region_ids[t] % 20))
+    colors = np.array(colors)
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    poly = Poly3DCollection(triangles, facecolors=colors, edgecolor='k', linewidths=0.1, alpha=0.9)
+    ax.add_collection3d(poly)
+    v = np.array(vertices)
+    ax.set_xlim(v[:, 0].min(), v[:, 0].max())
+    ax.set_ylim(v[:, 1].min(), v[:, 1].max())
+    ax.set_zlim(v[:, 2].min(), v[:, 2].max())
+    ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
+    plt.title("Segmentation after erosion and second region growing")
+    plt.tight_layout()
+    plt.show() """
+
+    # Dilatation
+    for _ in range(n_erosions):
+        new_region_ids = region_ids.copy()
+        for t in range(n_triangles):
+            if region_ids[t] != -1:
+                continue
+            neighbor_regions = [region_ids[n] for n in triangle_neighbors[t] if region_ids[n] != -1]
+            if len(neighbor_regions) == 1:
+                new_region_ids[t] = neighbor_regions[0]
+        region_ids = new_region_ids
+
+    n_regions_after = len(np.unique(region_ids[region_ids >= 0]))
+    #print(f"Number of regions after erosion/dilation : {n_regions_after}")
+
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
+    # Final visualization of the segmentation
+    cmap = plt.get_cmap("tab20")
+    colors = []
+    for t in range(n_triangles):
+        if region_ids[t] == -1:
+            colors.append((0, 0, 0, 0.7))
+        else:
+            colors.append(cmap(region_ids[t] % 20))
+    colors = np.array(colors)
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    poly_collection = Poly3DCollection(triangles, facecolors=colors, edgecolor='k', linewidths=0.1, alpha=0.7)
+    ax.add_collection3d(poly_collection)
+    v = np.array(vertices)
+    ax.set_xlim(v[:, 0].min(), v[:, 0].max())
+    ax.set_ylim(v[:, 1].min(), v[:, 1].max())
+    ax.set_zlim(v[:, 2].min(), v[:, 2].max())
+    ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
+    plt.title("Final Segmentation")
     plt.show()
 
-    return region_ids, triangle_labels, threshold_low, threshold_high
 
+    return region_ids, triangle_labels, threshold_low, threshold_high, elapsed_time
 
+# STEP 5 : Evaluation of performance on an STL file
 
-### RUN SECTION ############################################################################
+region_ids, triangle_labels, t_low, t_high, execution_time = segmentation(stl_mesh, n_bins=200, h=0.01, window_size=8, min_density=0.02, n_erosions=6)
 
-print(f"Nombre de triangles dans le mesh : {len(stl_mesh.vectors)}")
+print("----- RESULTS -----")
+print(f"Number of triangles in the mesh : {len(stl_mesh.vectors)}")
+print(f"Execution time : {execution_time:.2f} seconds")
+print(f"Thresholds used : {t_low:.4f} and {t_high:.4f}")
+print(f"Number of regions found : {len(np.unique(region_ids[region_ids >= 0]))}")
+
+############################################################################################
+## For testing individual steps ############################################################
 
 #vertices, normals, neighbours, mean_edge_lengths = extract_mesh_data(stl_mesh)
 #vertices, curvatures, _ = compute_curvatures(stl_mesh)
@@ -647,9 +881,5 @@ print(f"Nombre de triangles dans le mesh : {len(stl_mesh.vectors)}")
 #bin_centers, density = kernel_estimation(curvatures, n_bins=50, h=0.01)
 #analyze_distribution(curvatures, bin_centers, density)
 #labels, t_low, t_high = thresholding(vertices, curvatures, n_bins=50, h=0.01, window_size=10)
-
-# réglage de la détection des pics et vallées pour LURPart.stl : n_bins=150, h=0.005, window_size=10
-region_ids, triangle_labels, t_low, t_high = segmentation(stl_mesh, n_bins=200, h=0.02, window_size=10, min_density=0.02)
-
 
 ############################################################################################
