@@ -860,6 +860,7 @@ def segmentation_bis(stl_mesh, n_bins=50, h=0.01, window_size=10, min_density=0.
 
     return region_ids, triangle_labels, threshold_low, threshold_high, elapsed_time
 
+#----------------------------------------------------------------------------------------------------------
 # STEP 5 : Evaluation of performance on an STL file
 
 region_ids, triangle_labels, t_low, t_high, execution_time = segmentation(stl_mesh, n_bins=200, h=0.01, window_size=8, min_density=0.02, n_erosions=6)
